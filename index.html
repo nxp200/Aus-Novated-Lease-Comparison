@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novated Lease Comparison Calculator</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --surface2:   #22263a;
+      --border:     #2e3248;
+      --accent-a:   #4f8ef7;
+      --accent-b:   #a259f7;
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --amber:      #f59e0b;
+      --text:       #e2e8f0;
+      --muted:      #94a3b8;
+      --label:      #64748b;
+      --radius:     10px;
+      --radius-sm:  6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ─── Header ───────────────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    header h1 span {
+      color: var(--accent-a);
+    }
+    .header-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .btn-reset {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .btn-reset:hover { background: #2e3350; }
+
+    /* ─── Verdict Banner ───────────────────────────────────────────────────── */
+    .verdict {
+      max-width: 1400px;
+      margin: 20px auto 0;
+      padding: 0 24px;
+    }
+    .verdict-inner {
+      background: linear-gradient(135deg, #14241a 0%, #15281d 100%);
+      border: 1px solid #245236;
+      border-radius: var(--radius);
+      padding: 16px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .verdict-main { font-size: 15px; font-weight: 600; }
+    .verdict-main strong { color: var(--green); }
+    .verdict-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .verdict-figure { text-align: right; }
+    .verdict-figure .big { font-size: 24px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+    .verdict-figure .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* ─── Main Layout ──────────────────────────────────────────────────────── */
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px 24px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ─── Loan Column ──────────────────────────────────────────────────────── */
+    .loan-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .loan-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.2px;
+    }
+    .loan-a .loan-header {
+      background: linear-gradient(135deg, #1a2a4a 0%, #1e2d50 100%);
+      border: 1px solid #2e4a7a;
+      color: var(--accent-a);
+    }
+    .loan-b .loan-header {
+      background: linear-gradient(135deg, #28143c 0%, #2e1845 100%);
+      border: 1px solid #4a2a6a;
+      color: var(--accent-b);
+    }
+    .loan-badge {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800;
+    }
+    .loan-a .loan-badge { background: var(--accent-a); color: #fff; }
+    .loan-b .loan-badge { background: var(--accent-b); color: #fff; }
+
+    /* ─── Card ─────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-title {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--label);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ─── Form Field ────────────────────────────────────────────────────────── */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .field-row3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input:focus, select:focus { border-color: var(--accent-a); }
+    input.error { border-color: var(--red) !important; }
+    .error-msg { font-size: 11px; color: var(--red); }
+
+    /* ─── Difference Highlight ──────────────────────────────────────────────── */
+    body.diff-on input.diff,
+    body.diff-on select.diff {
+      border-color: var(--red) !important;
+      border-style: dashed;
+      background: rgba(239,68,68,0.08);
+    }
+    body.diff-on .toggle-group.diff {
+      border-color: var(--red);
+      border-style: dashed;
+      box-shadow: 0 0 0 1px rgba(239,68,68,0.5);
+    }
+    /* small "≠" marker on differing fields */
+    body.diff-on .field.diff-field > label::after {
+      content: " ≠";
+      color: var(--red);
+      font-weight: 700;
+    }
+    .diff-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .diff-toggle input { width: 15px; height: 15px; accent-color: var(--red); cursor: pointer; }
+
+    .input-prefix {
+      position: relative;
+    }
+    .input-prefix span {
+      position: absolute;
+      left: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--label);
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .input-prefix input { padding-left: 20px; }
+    .input-suffix {
+      position: relative;
+    }
+    .input-suffix span {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--label);
+      font-size: 12px;
+      pointer-events: none;
+    }
+    .input-suffix input { padding-right: 28px; }
+
+    .calc-display {
+      background: #12151f;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .calc-display .val { color: var(--text); font-weight: 600; }
+    .calc-display.exempt { background: rgba(34,197,94,0.08); border-color: #245236; }
+    .calc-display.exempt .val { color: var(--green); }
+    .calc-display.warn { background: rgba(245,158,11,0.08); border-color: #5a431a; }
+    .calc-display.warn .val { color: var(--amber); }
+
+    /* Toggle */
+    .toggle-group {
+      display: flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .toggle-group label {
+      flex: 1;
+      text-align: center;
+      padding: 7px 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .toggle-group input[type="radio"] { display: none; }
+    .toggle-group input[type="radio"]:checked + label {
+      background: var(--accent-a);
+      color: #fff;
+    }
+    .loan-b .toggle-group input[type="radio"]:checked + label {
+      background: var(--accent-b);
+    }
+
+    /* ─── Summary Card ──────────────────────────────────────────────────────── */
+    .summary-card {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 2px solid var(--border);
+    }
+    .loan-a .summary-card { border-color: var(--accent-a); }
+    .loan-b .summary-card { border-color: var(--accent-b); }
+
+    .summary-header {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .loan-a .summary-header { background: rgba(79,142,247,0.15); color: var(--accent-a); }
+    .loan-b .summary-header { background: rgba(162,89,247,0.15); color: var(--accent-b); }
+
+    .better-badge {
+      background: var(--green);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-rows {
+      background: var(--surface);
+    }
+    .summary-sub {
+      padding: 7px 16px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--label);
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .s-label { color: var(--muted); }
+    .summary-row .s-val { font-weight: 600; color: var(--text); }
+    .summary-row.highlight {
+      background: var(--surface2);
+    }
+    .summary-row.total-row {
+      background: #12151f;
+      padding: 12px 16px;
+    }
+    .summary-row.total-row .s-label { font-weight: 700; color: var(--text); font-size: 13px; }
+    .summary-row.total-row .s-val { font-size: 16px; font-weight: 800; }
+    .loan-a .summary-row.total-row .s-val { color: var(--accent-a); }
+    .loan-b .summary-row.total-row .s-val { color: var(--accent-b); }
+
+    .s-val.saving { color: var(--green) !important; }
+    .s-val.exempt { color: var(--green) !important; }
+
+    /* ─── Charts ────────────────────────────────────────────────────────────── */
+    .charts {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 8px 24px 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px 18px;
+    }
+    .chart-card h3 {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 14px;
+    }
+    .chart-svg { width: 100%; height: auto; display: block; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ─── Disclaimer ────────────────────────────────────────────────────────── */
+    .disclaimer {
+      text-align: center;
+      color: var(--label);
+      font-size: 11px;
+      padding: 8px 24px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ─── Responsive ────────────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+      .charts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Novated Lease <span>Comparison Calculator</span></h1>
+    <div class="header-sub">Compare two novated lease options side by side — finance, FBT, EV exemption &amp; tax. All calculations run in-browser; nothing is sent anywhere.</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <label class="diff-toggle">
+      <input type="checkbox" id="diff_toggle" checked onchange="toggleDiff()" />
+      Highlight differences
+    </label>
+    <button class="btn-reset" onclick="resetAll()">↺ Reset All</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════ VERDICT ════════ -->
+<div class="verdict">
+  <div class="verdict-inner">
+    <div>
+      <div class="verdict-main" id="verdict-main">—</div>
+      <div class="verdict-sub" id="verdict-sub">Net out-of-pocket cost over the full lease term, after tax savings, FBT and balloon.</div>
+    </div>
+    <div class="verdict-figure">
+      <div class="big" id="verdict-figure">—</div>
+      <div class="lbl">cheaper over term</div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- ═══════════════════════════════════════════════════════ LOAN A ══════ -->
+  <div class="loan-col loan-a" id="col-a">
+
+    <div class="loan-header">
+      <div class="loan-badge">A</div>
+      <div>
+        <input type="text" id="a_name" value="Loan Option A"
+          style="background:transparent;border:none;color:inherit;font-size:15px;font-weight:700;width:180px;outline:none;"
+          oninput="calc()" />
+      </div>
+    </div>
+
+    <!-- Finance -->
+    <div class="card">
+      <div class="card-title">Finance Details</div>
+      <div class="card-body">
+        <div class="field">
+          <label for="a_vehicle">Vehicle Cost (incl. GST)</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input type="number" id="a_vehicle" value="50000" min="0" step="1000" oninput="syncFinance('a'); calc()" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>GST Treatment</label>
+          <div class="toggle-group">
+            <input type="radio" name="a_gst" id="a_gst_y" value="yes" checked onchange="syncFinance('a'); calc()" />
+            <label for="a_gst_y">GST Claimed by Employer</label>
+            <input type="radio" name="a_gst" id="a_gst_n" value="no" onchange="syncFinance('a'); calc()" />
+            <label for="a_gst_n">No GST Claim</label>
+          </div>
+        </div>
+
+        <div class="calc-display">
+          <span>GST on Vehicle</span>
+          <span class="val" id="a_gst_amt">$4,545</span>
+        </div>
+        <div class="calc-display">
+          <span>Net Finance Amount (ex. GST)</span>
+          <span class="val" id="a_net">$45,455</span>
+        </div>
+
+        <div class="field">
+          <label for="a_finance">Finance Amount (override optional)</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input type="number" id="a_finance" value="45455" min="0" step="500" oninput="syncBalloon('a'); calc()" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="a_rate">Interest Rate</label>
+            <div class="input-suffix">
+              <input type="number" id="a_rate" value="7.5" min="0.01" max="30" step="0.1" oninput="calc()" />
+              <span>% p.a.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="a_term">Loan Term</label>
+            <select id="a_term" onchange="setMinResidual('a'); calc()">
+              <option value="12">12 months</option>
+              <option value="24">24 months</option>
+              <option value="36">36 months</option>
+              <option value="48">48 months</option>
+              <option value="60" selected>60 months</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Balloon / Residual Value <span style="color:var(--label);font-weight:400">(ATO minimum — raise only)</span></label>
+          <div class="field-row">
+            <div class="input-suffix">
+              <input type="number" id="a_balloon_pct" value="28.13" min="28.13" max="70" step="0.01" oninput="syncFromPct('a'); calc()" onchange="clampResidual('a'); calc()" />
+              <span>%</span>
+            </div>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="a_balloon_amt" value="12782" min="0" step="100" oninput="syncFromAmt('a'); calc()" onchange="clampResidual('a'); calc()" />
+            </div>
+          </div>
+          <div class="calc-display" style="margin-top:4px">
+            <span>ATO Min Residual (term)</span>
+            <span class="val" id="a_ato_min">28.13%</span>
+          </div>
+          <div class="calc-display" style="margin-top:4px">
+            <span>Amount Financed (paid down over term)</span>
+            <span class="val" id="a_amort">$32,673</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="a_freq">Repayment Frequency</label>
+          <select id="a_freq" onchange="calc()">
+            <option value="12">Monthly</option>
+            <option value="26">Fortnightly</option>
+            <option value="52">Weekly</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Salary & Tax -->
+    <div class="card">
+      <div class="card-title">Salary &amp; Tax</div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label for="a_salary">Gross Annual Salary</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="a_salary" value="120000" min="0" step="1000" oninput="suggestTax('a'); calc()" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="a_tax">Marginal Tax Rate</label>
+            <div class="input-suffix">
+              <input type="number" id="a_tax" value="39" min="0" max="60" step="0.5" oninput="calc()" />
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+        <div class="calc-display">
+          <span>Suggested rate incl. Medicare (2025–26)</span>
+          <span class="val" id="a_tax_suggest">39%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FBT & Packaging -->
+    <div class="card">
+      <div class="card-title">FBT &amp; Packaging</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Vehicle Type</label>
+          <div class="toggle-group">
+            <input type="radio" name="a_vtype" id="a_vtype_ice" value="ice" checked onchange="calc()" />
+            <label for="a_vtype_ice">Petrol / Diesel / Hybrid</label>
+            <input type="radio" name="a_vtype" id="a_vtype_ev" value="ev" onchange="calc()" />
+            <label for="a_vtype_ev">Electric (BEV / FCEV)</label>
+          </div>
+        </div>
+
+        <div class="calc-display" id="a_ev_status_wrap" style="display:none">
+          <span id="a_ev_status_label">EV FBT Exemption</span>
+          <span class="val" id="a_ev_status">—</span>
+        </div>
+
+        <div class="field" id="a_fbtmethod_wrap">
+          <label>FBT Method</label>
+          <div class="toggle-group">
+            <input type="radio" name="a_fbt" id="a_fbt_ecm" value="ecm" checked onchange="calc()" />
+            <label for="a_fbt_ecm">Employee Contribution (ECM)</label>
+            <input type="radio" name="a_fbt" id="a_fbt_stat" value="stat" onchange="calc()" />
+            <label for="a_fbt_stat">Statutory (employer pays FBT)</label>
+          </div>
+        </div>
+
+        <div class="calc-display">
+          <span>Statutory Taxable Value (20% p.a.)</span>
+          <span class="val" id="a_fbt_taxable">$10,000</span>
+        </div>
+        <div class="calc-display">
+          <span>Annual Post-Tax (ECM) Contribution</span>
+          <span class="val" id="a_fbt_ecm_amt">$10,000</span>
+        </div>
+        <div class="calc-display">
+          <span>Annual FBT Payable</span>
+          <span class="val" id="a_fbt_payable">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Running Costs -->
+    <div class="card">
+      <div class="card-title">Annual Running Costs (optional)</div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label for="a_fuel">Fuel / Charging</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_fuel" value="3000" min="0" step="100" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="a_rego">Registration</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_rego" value="800" min="0" step="50" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="a_ins">Insurance</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_ins" value="1500" min="0" step="100" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="a_maint">Maintenance</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_maint" value="1000" min="0" step="100" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="a_tyres">Tyres</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_tyres" value="400" min="0" step="50" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="a_other">Mgmt Fee / Other</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="a_other" value="0" min="0" step="50" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="calc-display">
+          <span>Total Annual Running Costs</span>
+          <span class="val" id="a_running_total">$6,700</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-card">
+      <div class="summary-header">
+        <span>Summary — <span id="a_summary_name">Loan Option A</span></span>
+        <span class="better-badge" id="a_better" style="display:none">★ Better Value</span>
+      </div>
+      <div class="summary-rows">
+        <div class="summary-sub">Finance</div>
+        <div class="summary-row highlight">
+          <span class="s-label">Lease Repayment</span>
+          <span class="s-val" id="a_s_repay">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Number of Payments</span>
+          <span class="s-val" id="a_s_n">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Repayments</span>
+          <span class="s-val" id="a_s_total_repay">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Interest Paid</span>
+          <span class="s-val" id="a_s_interest">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Balloon / Residual (end of term)</span>
+          <span class="s-val" id="a_s_balloon">—</span>
+        </div>
+
+        <div class="summary-sub">Per <span id="a_s_freqword">Month</span> — Salary Deduction</div>
+        <div class="summary-row">
+          <span class="s-label">Pre-Tax Deduction</span>
+          <span class="s-val" id="a_s_pretax_pp">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Post-Tax Deduction (ECM)</span>
+          <span class="s-val" id="a_s_posttax_pp">—</span>
+        </div>
+        <div class="summary-row highlight">
+          <span class="s-label">Net Cost After Tax</span>
+          <span class="s-val" id="a_s_net_pp">—</span>
+        </div>
+
+        <div class="summary-sub">FBT &amp; Tax</div>
+        <div class="summary-row">
+          <span class="s-label">Annual FBT Payable</span>
+          <span class="s-val" id="a_s_fbt">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Annual Post-Tax (ECM) Contribution</span>
+          <span class="s-val" id="a_s_ec_yr">—</span>
+        </div>
+        <div class="summary-row highlight">
+          <span class="s-label">Estimated Annual Tax Saving</span>
+          <span class="s-val saving" id="a_s_tax_saving">—</span>
+        </div>
+
+        <div class="summary-sub">Cost Over Full Term</div>
+        <div class="summary-row">
+          <span class="s-label">Total Running Costs</span>
+          <span class="s-val" id="a_s_running_total">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Pre-Tax Deductions</span>
+          <span class="s-val" id="a_s_pretax_total">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Post-Tax (ECM) Contributions</span>
+          <span class="s-val" id="a_s_posttax_total">—</span>
+        </div>
+        <div class="summary-row total-row">
+          <span class="s-label">Net Cost (incl. balloon, after tax)</span>
+          <span class="s-val" id="a_s_net_total">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /loan-a -->
+
+  <!-- ═══════════════════════════════════════════════════════ LOAN B ══════ -->
+  <div class="loan-col loan-b" id="col-b">
+
+    <div class="loan-header">
+      <div class="loan-badge">B</div>
+      <div>
+        <input type="text" id="b_name" value="Loan Option B"
+          style="background:transparent;border:none;color:inherit;font-size:15px;font-weight:700;width:180px;outline:none;"
+          oninput="calc()" />
+      </div>
+    </div>
+
+    <!-- Finance -->
+    <div class="card">
+      <div class="card-title">Finance Details</div>
+      <div class="card-body">
+        <div class="field">
+          <label for="b_vehicle">Vehicle Cost (incl. GST)</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input type="number" id="b_vehicle" value="50000" min="0" step="1000" oninput="syncFinance('b'); calc()" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>GST Treatment</label>
+          <div class="toggle-group">
+            <input type="radio" name="b_gst" id="b_gst_y" value="yes" checked onchange="syncFinance('b'); calc()" />
+            <label for="b_gst_y">GST Claimed by Employer</label>
+            <input type="radio" name="b_gst" id="b_gst_n" value="no" onchange="syncFinance('b'); calc()" />
+            <label for="b_gst_n">No GST Claim</label>
+          </div>
+        </div>
+
+        <div class="calc-display">
+          <span>GST on Vehicle</span>
+          <span class="val" id="b_gst_amt">$4,545</span>
+        </div>
+        <div class="calc-display">
+          <span>Net Finance Amount (ex. GST)</span>
+          <span class="val" id="b_net">$45,455</span>
+        </div>
+
+        <div class="field">
+          <label for="b_finance">Finance Amount (override optional)</label>
+          <div class="input-prefix">
+            <span>$</span>
+            <input type="number" id="b_finance" value="45455" min="0" step="500" oninput="syncBalloon('b'); calc()" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="b_rate">Interest Rate</label>
+            <div class="input-suffix">
+              <input type="number" id="b_rate" value="6.9" min="0.01" max="30" step="0.1" oninput="calc()" />
+              <span>% p.a.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="b_term">Loan Term</label>
+            <select id="b_term" onchange="setMinResidual('b'); calc()">
+              <option value="12">12 months</option>
+              <option value="24">24 months</option>
+              <option value="36">36 months</option>
+              <option value="48">48 months</option>
+              <option value="60" selected>60 months</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Balloon / Residual Value <span style="color:var(--label);font-weight:400">(ATO minimum — raise only)</span></label>
+          <div class="field-row">
+            <div class="input-suffix">
+              <input type="number" id="b_balloon_pct" value="28.13" min="28.13" max="70" step="0.01" oninput="syncFromPct('b'); calc()" onchange="clampResidual('b'); calc()" />
+              <span>%</span>
+            </div>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="b_balloon_amt" value="12782" min="0" step="100" oninput="syncFromAmt('b'); calc()" onchange="clampResidual('b'); calc()" />
+            </div>
+          </div>
+          <div class="calc-display" style="margin-top:4px">
+            <span>ATO Min Residual (term)</span>
+            <span class="val" id="b_ato_min">28.13%</span>
+          </div>
+          <div class="calc-display" style="margin-top:4px">
+            <span>Amount Financed (paid down over term)</span>
+            <span class="val" id="b_amort">$32,673</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="b_freq">Repayment Frequency</label>
+          <select id="b_freq" onchange="calc()">
+            <option value="12">Monthly</option>
+            <option value="26">Fortnightly</option>
+            <option value="52">Weekly</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Salary & Tax -->
+    <div class="card">
+      <div class="card-title">Salary &amp; Tax</div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label for="b_salary">Gross Annual Salary</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="b_salary" value="120000" min="0" step="1000" oninput="suggestTax('b'); calc()" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="b_tax">Marginal Tax Rate</label>
+            <div class="input-suffix">
+              <input type="number" id="b_tax" value="39" min="0" max="60" step="0.5" oninput="calc()" />
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+        <div class="calc-display">
+          <span>Suggested rate incl. Medicare (2025–26)</span>
+          <span class="val" id="b_tax_suggest">39%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FBT & Packaging -->
+    <div class="card">
+      <div class="card-title">FBT &amp; Packaging</div>
+      <div class="card-body">
+        <div class="field">
+          <label>Vehicle Type</label>
+          <div class="toggle-group">
+            <input type="radio" name="b_vtype" id="b_vtype_ice" value="ice" checked onchange="calc()" />
+            <label for="b_vtype_ice">Petrol / Diesel / Hybrid</label>
+            <input type="radio" name="b_vtype" id="b_vtype_ev" value="ev" onchange="calc()" />
+            <label for="b_vtype_ev">Electric (BEV / FCEV)</label>
+          </div>
+        </div>
+
+        <div class="calc-display" id="b_ev_status_wrap" style="display:none">
+          <span id="b_ev_status_label">EV FBT Exemption</span>
+          <span class="val" id="b_ev_status">—</span>
+        </div>
+
+        <div class="field" id="b_fbtmethod_wrap">
+          <label>FBT Method</label>
+          <div class="toggle-group">
+            <input type="radio" name="b_fbt" id="b_fbt_ecm" value="ecm" checked onchange="calc()" />
+            <label for="b_fbt_ecm">Employee Contribution (ECM)</label>
+            <input type="radio" name="b_fbt" id="b_fbt_stat" value="stat" onchange="calc()" />
+            <label for="b_fbt_stat">Statutory (employer pays FBT)</label>
+          </div>
+        </div>
+
+        <div class="calc-display">
+          <span>Statutory Taxable Value (20% p.a.)</span>
+          <span class="val" id="b_fbt_taxable">$10,000</span>
+        </div>
+        <div class="calc-display">
+          <span>Annual Post-Tax (ECM) Contribution</span>
+          <span class="val" id="b_fbt_ecm_amt">$10,000</span>
+        </div>
+        <div class="calc-display">
+          <span>Annual FBT Payable</span>
+          <span class="val" id="b_fbt_payable">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Running Costs -->
+    <div class="card">
+      <div class="card-title">Annual Running Costs (optional)</div>
+      <div class="card-body">
+        <div class="field-row">
+          <div class="field">
+            <label for="b_fuel">Fuel / Charging</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_fuel" value="3000" min="0" step="100" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="b_rego">Registration</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_rego" value="800" min="0" step="50" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="b_ins">Insurance</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_ins" value="1500" min="0" step="100" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="b_maint">Maintenance</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_maint" value="1000" min="0" step="100" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="b_tyres">Tyres</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_tyres" value="400" min="0" step="50" oninput="calc()" /></div>
+          </div>
+          <div class="field">
+            <label for="b_other">Mgmt Fee / Other</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="b_other" value="0" min="0" step="50" oninput="calc()" /></div>
+          </div>
+        </div>
+        <div class="calc-display">
+          <span>Total Annual Running Costs</span>
+          <span class="val" id="b_running_total">$6,700</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-card">
+      <div class="summary-header">
+        <span>Summary — <span id="b_summary_name">Loan Option B</span></span>
+        <span class="better-badge" id="b_better" style="display:none">★ Better Value</span>
+      </div>
+      <div class="summary-rows">
+        <div class="summary-sub">Finance</div>
+        <div class="summary-row highlight">
+          <span class="s-label">Lease Repayment</span>
+          <span class="s-val" id="b_s_repay">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Number of Payments</span>
+          <span class="s-val" id="b_s_n">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Repayments</span>
+          <span class="s-val" id="b_s_total_repay">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Interest Paid</span>
+          <span class="s-val" id="b_s_interest">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Balloon / Residual (end of term)</span>
+          <span class="s-val" id="b_s_balloon">—</span>
+        </div>
+
+        <div class="summary-sub">Per <span id="b_s_freqword">Month</span> — Salary Deduction</div>
+        <div class="summary-row">
+          <span class="s-label">Pre-Tax Deduction</span>
+          <span class="s-val" id="b_s_pretax_pp">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Post-Tax Deduction (ECM)</span>
+          <span class="s-val" id="b_s_posttax_pp">—</span>
+        </div>
+        <div class="summary-row highlight">
+          <span class="s-label">Net Cost After Tax</span>
+          <span class="s-val" id="b_s_net_pp">—</span>
+        </div>
+
+        <div class="summary-sub">FBT &amp; Tax</div>
+        <div class="summary-row">
+          <span class="s-label">Annual FBT Payable</span>
+          <span class="s-val" id="b_s_fbt">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Annual Post-Tax (ECM) Contribution</span>
+          <span class="s-val" id="b_s_ec_yr">—</span>
+        </div>
+        <div class="summary-row highlight">
+          <span class="s-label">Estimated Annual Tax Saving</span>
+          <span class="s-val saving" id="b_s_tax_saving">—</span>
+        </div>
+
+        <div class="summary-sub">Cost Over Full Term</div>
+        <div class="summary-row">
+          <span class="s-label">Total Running Costs</span>
+          <span class="s-val" id="b_s_running_total">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Pre-Tax Deductions</span>
+          <span class="s-val" id="b_s_pretax_total">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="s-label">Total Post-Tax (ECM) Contributions</span>
+          <span class="s-val" id="b_s_posttax_total">—</span>
+        </div>
+        <div class="summary-row total-row">
+          <span class="s-label">Net Cost (incl. balloon, after tax)</span>
+          <span class="s-val" id="b_s_net_total">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /loan-b -->
+</main>
+
+<!-- ═══════════════════════════════════════════════════════ CHARTS ══════ -->
+<div class="charts">
+  <div class="chart-card">
+    <h3>Cost Composition Over Term</h3>
+    <svg id="chart-stack" class="chart-svg" viewBox="0 0 460 260" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#4f8ef7"></span>Principal</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#f59e0b"></span>Interest</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span>Running Costs</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#ef4444"></span>FBT</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#94a3b8"></span>Balloon</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <h3>Net Out-of-Pocket Cost (after tax)</h3>
+    <svg id="chart-net" class="chart-svg" viewBox="0 0 460 260" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#4f8ef7"></span>Option A</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#a259f7"></span>Option B</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span>Tax saved vs paying from take-home pay</div>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  ⚠️ This tool is for illustrative comparison purposes only. It does not constitute financial, tax, or legal advice.
+  Figures are estimates based on standard amortisation formulas, the FBT statutory formula method (20% taxable value,
+  47% FBT rate, Type-1 gross-up 2.0802) and 2025–26 ATO individual income tax brackets. The EV FBT exemption is modelled
+  for eligible battery/hydrogen electric vehicles first held from 1 July 2022 and priced below the 2025–26 fuel-efficient
+  LCT threshold of $91,387 (PHEVs are no longer eligible from 1 April 2025). Always confirm figures with your novated
+  lease provider and a qualified financial adviser before making any decision.
+</div>
+
+<script>
+  /* ─────────────────────────────────────────────────────────────────────────
+     CONSTANTS
+  ──────────────────────────────────────────────────────────────────────── */
+  const ATO_RESIDUALS = { 12:65.63, 24:56.25, 36:46.88, 48:37.50, 60:28.13, 72:18.75, 84:9.38 };
+
+  const FBT = {
+    STAT_RATE:   0.20,      // statutory fraction of base value
+    FBT_RATE:    0.47,      // 2025-26 FBT rate
+    GROSSUP_T1:  2.0802,    // Type 1 gross-up (employer claims GST credit)
+    EV_LCT:      91387      // 2025-26 fuel-efficient LCT threshold
+  };
+
+  function getAtoMin(termMonths) {
+    const brackets = Object.keys(ATO_RESIDUALS).map(Number);
+    const nearest = brackets.reduce((prev, curr) =>
+      Math.abs(curr - termMonths) < Math.abs(prev - termMonths) ? curr : prev);
+    return ATO_RESIDUALS[nearest];
+  }
+
+  /* ─── Tax Bracket Suggestion (2025–26 ATO incl. 2% Medicare levy) ──────── */
+  function getMarginalRate(salary) {
+    // Stage-3 brackets effective 2024-25 onward; add 2% Medicare above the low-income threshold.
+    let income = 0;
+    if (salary <= 18200)        income = 0;
+    else if (salary <= 45000)   income = 16;
+    else if (salary <= 135000)  income = 30;
+    else if (salary <= 190000)  income = 37;
+    else                        income = 45;
+    const medicare = salary > 27222 ? 2 : 0;   // simplified Medicare levy threshold
+    return income + (income > 0 ? medicare : 0);
+  }
+
+  function suggestTax(p) {
+    const salary = val(`${p}_salary`);
+    const rate = getMarginalRate(salary);
+    document.getElementById(`${p}_tax_suggest`).textContent = rate + '%';
+    document.getElementById(`${p}_tax`).value = rate;
+  }
+
+  /* ─── Finance Sync ──────────────────────────────────────────────────── */
+  // Net Finance Amount = vehicle cost − GST (the amount actually financed).
+  // Re-derive it whenever the vehicle cost or GST treatment changes, then
+  // refresh the balloon $ (which is a % of the finance amount).
+  function syncFinance(p) {
+    const vehicle  = val(`${p}_vehicle`);
+    const gstClaim = document.querySelector(`input[name="${p}_gst"]:checked`).value === 'yes';
+    const gstAmt   = gstClaim ? vehicle / 11 : 0;
+    setVal(`${p}_finance`, round2(vehicle - gstAmt));
+    syncBalloon(p);
+  }
+
+  /* ─── Balloon Sync ──────────────────────────────────────────────────── */
+  function syncBalloon(p) {
+    const pct = val(`${p}_balloon_pct`);
+    const fin = val(`${p}_finance`);
+    if (fin > 0) setVal(`${p}_balloon_amt`, round2((pct / 100) * fin));
+    updateAtoMin(p);
+  }
+  function syncFromPct(p) {
+    const pct = val(`${p}_balloon_pct`), fin = val(`${p}_finance`);
+    if (fin > 0) setVal(`${p}_balloon_amt`, round2((pct / 100) * fin));
+  }
+  function syncFromAmt(p) {
+    const amt = val(`${p}_balloon_amt`), fin = val(`${p}_finance`);
+    if (fin > 0) setVal(`${p}_balloon_pct`, round2((amt / fin) * 100));
+  }
+  function updateAtoMin(p) {
+    const term = val(`${p}_term`);
+    document.getElementById(`${p}_ato_min`).textContent = getAtoMin(term).toFixed(2) + '%';
+  }
+
+  /* ─── Residual floor (ATO minimum) ──────────────────────────────────── */
+  // On term change: reset the balloon % to the ATO minimum for that term and
+  // lock it as the lower bound. The user can raise the % but not go below it.
+  function setMinResidual(p) {
+    const min = getAtoMin(val(`${p}_term`));
+    const pctEl = document.getElementById(`${p}_balloon_pct`);
+    pctEl.min = min;
+    pctEl.value = min;
+    syncFromPct(p);     // recompute balloon $ from the new %
+    updateAtoMin(p);
+  }
+  // If the user types a residual below the ATO floor, snap it back up to the floor.
+  function clampResidual(p) {
+    const min = getAtoMin(val(`${p}_term`));
+    const pctEl = document.getElementById(`${p}_balloon_pct`);
+    const cur = parseFloat(pctEl.value);
+    if (isNaN(cur) || cur < min) pctEl.value = min;
+    pctEl.min = min;
+    syncFromPct(p);     // keep balloon $ in step with the (possibly clamped) %
+  }
+
+  /* ─── Core Calculation ──────────────────────────────────────────────── */
+  function calcLoan(p) {
+    const vehicle  = val(`${p}_vehicle`);
+    const gstClaim = document.querySelector(`input[name="${p}_gst"]:checked`).value === 'yes';
+    const gstAmt   = gstClaim ? vehicle / 11 : 0;
+    const netVehicle = vehicle - gstAmt;
+    setText(`${p}_gst_amt`, fmt(gstAmt));
+    setText(`${p}_net`, fmt(netVehicle));
+
+    const finance    = val(`${p}_finance`);
+    const rate_pa    = val(`${p}_rate`);
+    const termMo     = val(`${p}_term`);
+    const balloonAmt = val(`${p}_balloon_amt`);
+    const freqPerYr  = parseInt(document.getElementById(`${p}_freq`).value);
+    const taxRate    = val(`${p}_tax`) / 100;
+    const termYrs    = termMo / 12;
+
+    // ── Running costs ──
+    const running_yr = ['fuel','rego','ins','maint','tyres','other']
+      .reduce((s, k) => s + val(`${p}_${k}`), 0);
+    setText(`${p}_running_total`, fmt(running_yr));
+
+    // ── Finance amortisation (with balloon / residual) ──
+    const n = Math.round((termMo / 12) * freqPerYr);
+    const r = rate_pa / 100 / freqPerYr;
+    let repay;
+    if (r === 0) {
+      repay = (finance - balloonAmt) / n;
+    } else {
+      const pow = Math.pow(1 + r, n);
+      repay = (finance - balloonAmt / pow) * r / (1 - 1 / pow);
+    }
+    const totalRepay    = repay * n;
+    const totalInterest = totalRepay - (finance - balloonAmt);
+    const annualLease   = totalRepay / termYrs;       // amortised lease cost per year
+
+    // Amount actually paid down over the term (finance principal less the deferred balloon)
+    setText(`${p}_amort`, fmt(Math.max(finance - balloonAmt, 0)));
+
+    // ── FBT & EV exemption ──
+    const vtype = document.querySelector(`input[name="${p}_vtype"]:checked`).value;
+    const fbtMethodEl = document.querySelector(`input[name="${p}_fbt"]:checked`);
+    let fbtMethod = fbtMethodEl ? fbtMethodEl.value : 'ecm';
+
+    const evStatusWrap = document.getElementById(`${p}_ev_status_wrap`);
+    const fbtMethodWrap = document.getElementById(`${p}_fbtmethod_wrap`);
+
+    const taxableValue = FBT.STAT_RATE * vehicle;     // 20% of GST-inclusive base value p.a.
+    let evExempt = false;
+
+    if (vtype === 'ev') {
+      evStatusWrap.style.display = '';
+      if (vehicle <= FBT.EV_LCT) {
+        evExempt = true;
+        evStatusWrap.className = 'calc-display exempt';
+        setText(`${p}_ev_status`, 'Exempt — under $91,387 LCT');
+      } else {
+        evStatusWrap.className = 'calc-display warn';
+        setText(`${p}_ev_status`, 'Over LCT — FBT applies');
+      }
+    } else {
+      evStatusWrap.style.display = 'none';
+    }
+
+    // Method selector hidden when fully exempt
+    fbtMethodWrap.style.display = evExempt ? 'none' : '';
+
+    let ecmAnnual = 0;       // post-tax employee contribution
+    let fbtPayable = 0;      // employer FBT cash cost (statutory method)
+
+    if (evExempt) {
+      ecmAnnual = 0; fbtPayable = 0;
+    } else if (fbtMethod === 'ecm') {
+      ecmAnnual = taxableValue; fbtPayable = 0;
+    } else { // statutory: employer remits FBT, no ECM
+      ecmAnnual = 0;
+      fbtPayable = taxableValue * FBT.GROSSUP_T1 * FBT.FBT_RATE;
+    }
+
+    setText(`${p}_fbt_taxable`,  fmt(taxableValue));
+    setText(`${p}_fbt_ecm_amt`,  evExempt ? '$0 (exempt)' : fmt(ecmAnnual));
+    setText(`${p}_fbt_payable`,  fmt(fbtPayable));
+
+    // ── Packaging split (per year) ──
+    // Whole running cost + lease + FBT is salary-packaged.
+    // ECM portion is funded from POST-tax salary; the remainder from PRE-tax salary.
+    const annualPackage  = annualLease + running_yr + fbtPayable;
+    const preTaxAnnual   = Math.max(annualPackage - ecmAnnual, 0);
+    const postTaxAnnual  = ecmAnnual;
+
+    // Tax saving = income tax avoided on the pre-tax portion.
+    const taxSavingAnnual = preTaxAnnual * taxRate;
+
+    // Net out-of-pocket per year = pre-tax cost after tax relief + post-tax (ECM) dollars.
+    const netAnnual = preTaxAnnual * (1 - taxRate) + postTaxAnnual;
+
+    // ── Per-period figures ──
+    const preTaxPP  = preTaxAnnual  / freqPerYr;
+    const postTaxPP = postTaxAnnual / freqPerYr;
+    const netPP     = netAnnual     / freqPerYr;
+
+    // ── Totals over term ──
+    const totalRunning  = running_yr * termYrs;
+    const preTaxTotal   = preTaxAnnual  * termYrs;
+    const postTaxTotal  = postTaxAnnual * termYrs;
+    const taxSavingTotal = taxSavingAnnual * termYrs;
+    // Balloon paid at end from post-tax money (typical) → add to net cost.
+    const netTotal = netAnnual * termYrs + balloonAmt;
+
+    const freqWord = { 12:'Month', 26:'Fortnight', 52:'Week' }[freqPerYr];
+
+    return {
+      repay, n, totalRepay, totalInterest, balloonAmt,
+      finance, running_yr, totalRunning, evExempt, ecmAnnual, fbtPayable,
+      preTaxPP, postTaxPP, netPP,
+      taxSavingAnnual, preTaxTotal, postTaxTotal, taxSavingTotal,
+      netTotal, freqWord, termYrs,
+      principalPortion: finance - balloonAmt
+    };
+  }
+
+  function calc() {
+    const aName = document.getElementById('a_name').value || 'Loan Option A';
+    const bName = document.getElementById('b_name').value || 'Loan Option B';
+    setText('a_summary_name', aName);
+    setText('b_summary_name', bName);
+
+    const A = calcLoan('a');
+    const B = calcLoan('b');
+
+    populateSummary('a', A);
+    populateSummary('b', B);
+
+    // Verdict — lower net cost wins
+    const aWins = A.netTotal <= B.netTotal;
+    document.getElementById('a_better').style.display = aWins ? '' : 'none';
+    document.getElementById('b_better').style.display = aWins ? 'none' : '';
+
+    const winName  = aWins ? aName : bName;
+    const diff     = Math.abs(A.netTotal - B.netTotal);
+    const perYr    = diff / Math.max(aWins ? A.termYrs : B.termYrs, 0.0001);
+    if (diff < 1) {
+      setText('verdict-main', 'Both options cost about the same.');
+      setText('verdict-figure', '$0');
+    } else {
+      document.getElementById('verdict-main').innerHTML =
+        `<strong>${escapeHtml(winName)}</strong> is the cheaper option.`;
+      setText('verdict-figure', fmt(diff));
+    }
+    setText('verdict-sub',
+      `≈ ${fmt(perYr)} / year difference · Net out-of-pocket over term, after tax savings, FBT and balloon.`);
+
+    drawCharts(A, B, aName, bName);
+    highlightDiffs();
+  }
+
+  /* ─── Difference Highlighting ───────────────────────────────────────── */
+  // Paired numeric/select inputs (compared by the suffix after a_/b_)
+  const DIFF_NUM = ['vehicle','finance','rate','term','balloon_pct','balloon_amt',
+                    'salary','tax','fuel','rego','ins','maint','tyres','other','freq'];
+  // Paired radio groups (compared by checked value)
+  const DIFF_RADIO = ['gst','vtype','fbt'];
+
+  function highlightDiffs() {
+    DIFF_NUM.forEach(key => {
+      const a = document.getElementById(`a_${key}`);
+      const b = document.getElementById(`b_${key}`);
+      if (!a || !b) return;
+      const differ = a.value.trim() !== b.value.trim();
+      markField(a, differ);
+      markField(b, differ);
+    });
+
+    DIFF_RADIO.forEach(key => {
+      const aSel = document.querySelector(`input[name="a_${key}"]:checked`);
+      const bSel = document.querySelector(`input[name="b_${key}"]:checked`);
+      if (!aSel || !bSel) return;
+      const differ = aSel.value !== bSel.value;
+      [aSel, bSel].forEach(sel => {
+        const grp = sel.closest('.toggle-group');
+        if (grp) grp.classList.toggle('diff', differ);
+      });
+    });
+  }
+
+  function markField(input, differ) {
+    input.classList.toggle('diff', differ);
+    const field = input.closest('.field');
+    if (field) field.classList.toggle('diff-field', differ);
+  }
+
+  function toggleDiff() {
+    document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
+  }
+
+  function populateSummary(p, r) {
+    const freqLower = r.freqWord.toLowerCase();
+    setText(`${p}_s_freqword`, r.freqWord);
+    setText(`${p}_s_repay`,        `${fmt(r.repay)} / ${freqLower}`);
+    setText(`${p}_s_n`,            `${r.n} payments`);
+    setText(`${p}_s_total_repay`,  fmt(r.totalRepay));
+    setText(`${p}_s_interest`,     fmt(r.totalInterest));
+    setText(`${p}_s_balloon`,      fmt(r.balloonAmt));
+
+    setText(`${p}_s_pretax_pp`,    `${fmt(r.preTaxPP)} / ${freqLower}`);
+    setText(`${p}_s_posttax_pp`,   `${fmt(r.postTaxPP)} / ${freqLower}`);
+    setText(`${p}_s_net_pp`,       `${fmt(r.netPP)} / ${freqLower}`);
+
+    setText(`${p}_s_fbt`,          r.evExempt ? '$0 (EV exempt)' : fmt(r.fbtPayable));
+    setText(`${p}_s_ec_yr`,        r.evExempt ? '$0 (EV exempt)' : fmt(r.ecmAnnual));
+    setText(`${p}_s_tax_saving`,   fmt(r.taxSavingAnnual) + ' / yr');
+
+    setText(`${p}_s_running_total`, fmt(r.totalRunning));
+    setText(`${p}_s_pretax_total`,  fmt(r.preTaxTotal));
+    setText(`${p}_s_posttax_total`, fmt(r.postTaxTotal));
+    setText(`${p}_s_net_total`,     fmt(r.netTotal));
+
+    const fbtEl = document.getElementById(`${p}_s_fbt`);
+    const ecEl  = document.getElementById(`${p}_s_ec_yr`);
+    fbtEl.className = 's-val' + (r.evExempt ? ' exempt' : '');
+    ecEl.className  = 's-val' + (r.evExempt ? ' exempt' : '');
+  }
+
+  /* ─── Charts (inline SVG, no dependencies) ──────────────────────────── */
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, text) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  function drawCharts(A, B, aName, bName) {
+    drawStack(A, B, aName, bName);
+    drawNet(A, B, aName, bName);
+  }
+
+  function drawStack(A, B, aName, bName) {
+    const svg = document.getElementById('chart-stack');
+    svg.innerHTML = '';
+    const W = 460, H = 260, padL = 50, padR = 12, padT = 14, padB = 40;
+    const plotH = H - padT - padB, plotW = W - padL - padR;
+
+    const segs = a => [
+      { v: a.principalPortion, c: '#4f8ef7' },
+      { v: a.totalInterest,    c: '#f59e0b' },
+      { v: a.totalRunning,     c: '#22c55e' },
+      { v: a.fbtPayable * a.termYrs, c: '#ef4444' },
+      { v: a.balloonAmt,       c: '#94a3b8' }
+    ];
+    const aSegs = segs(A), bSegs = segs(B);
+    const aTot = aSegs.reduce((s,x)=>s+x.v,0);
+    const bTot = bSegs.reduce((s,x)=>s+x.v,0);
+    const maxV = Math.max(aTot, bTot, 1);
+
+    // y gridlines
+    const ticks = 4;
+    for (let i = 0; i <= ticks; i++) {
+      const y = padT + plotH - (plotH * i / ticks);
+      svg.appendChild(el('line', { x1:padL, y1:y, x2:W-padR, y2:y, stroke:'#2e3248', 'stroke-width':1 }));
+      svg.appendChild(el('text', { x:padL-6, y:y+3, 'text-anchor':'end', fill:'#64748b', 'font-size':9 },
+        '$' + Math.round(maxV * i / ticks / 1000) + 'k'));
+    }
+
+    const barW = 70;
+    const cols = [{ segs:aSegs, label:aName, x: padL + plotW*0.28 - barW/2 },
+                  { segs:bSegs, label:bName, x: padL + plotW*0.72 - barW/2 }];
+    cols.forEach(col => {
+      let yCursor = padT + plotH;
+      col.segs.forEach(s => {
+        const h = (s.v / maxV) * plotH;
+        if (h > 0.3) {
+          yCursor -= h;
+          svg.appendChild(el('rect', { x:col.x, y:yCursor, width:barW, height:h, fill:s.c, rx:1 }));
+        }
+      });
+      const tot = col.segs.reduce((s,x)=>s+x.v,0);
+      svg.appendChild(el('text', { x:col.x+barW/2, y:yCursor-6, 'text-anchor':'middle', fill:'#e2e8f0', 'font-size':11, 'font-weight':700 }, fmtShort(tot)));
+      svg.appendChild(el('text', { x:col.x+barW/2, y:H-padB+16, 'text-anchor':'middle', fill:'#94a3b8', 'font-size':10 }, clip(col.label)));
+    });
+  }
+
+  function drawNet(A, B, aName, bName) {
+    const svg = document.getElementById('chart-net');
+    svg.innerHTML = '';
+    const W = 460, H = 260, padL = 50, padR = 12, padT = 14, padB = 40;
+    const plotH = H - padT - padB, plotW = W - padL - padR;
+
+    // gross = net + tax saved over term → shows the "before tax relief" cost as a ghost
+    const items = [
+      { net:A.netTotal, saved:A.taxSavingTotal, label:aName, c:'#4f8ef7' },
+      { net:B.netTotal, saved:B.taxSavingTotal, label:bName, c:'#a259f7' }
+    ];
+    const maxV = Math.max(...items.map(i => i.net + i.saved), 1);
+
+    const ticks = 4;
+    for (let i = 0; i <= ticks; i++) {
+      const y = padT + plotH - (plotH * i / ticks);
+      svg.appendChild(el('line', { x1:padL, y1:y, x2:W-padR, y2:y, stroke:'#2e3248', 'stroke-width':1 }));
+      svg.appendChild(el('text', { x:padL-6, y:y+3, 'text-anchor':'end', fill:'#64748b', 'font-size':9 },
+        '$' + Math.round(maxV * i / ticks / 1000) + 'k'));
+    }
+
+    const barW = 70;
+    const xs = [padL + plotW*0.28 - barW/2, padL + plotW*0.72 - barW/2];
+    items.forEach((it, idx) => {
+      const x = xs[idx];
+      const netH   = (it.net   / maxV) * plotH;
+      const savedH = (it.saved / maxV) * plotH;
+      let y = padT + plotH;
+      // net (solid)
+      y -= netH;
+      svg.appendChild(el('rect', { x, y, width:barW, height:netH, fill:it.c, rx:1 }));
+      // tax saved (green, stacked on top to show full gross)
+      y -= savedH;
+      svg.appendChild(el('rect', { x, y, width:barW, height:savedH, fill:'#22c55e', 'fill-opacity':0.55, rx:1 }));
+      svg.appendChild(el('text', { x:x+barW/2, y:y-6, 'text-anchor':'middle', fill:'#e2e8f0', 'font-size':11, 'font-weight':700 }, fmtShort(it.net)));
+      svg.appendChild(el('text', { x:x+barW/2, y:H-padB+16, 'text-anchor':'middle', fill:'#94a3b8', 'font-size':10 }, clip(it.label)));
+    });
+  }
+
+  /* ─── Helpers ──────────────────────────────────────────────────────── */
+  const fmt   = n => '$' + Math.round(n).toLocaleString('en-AU');
+  const fmtShort = n => n >= 1000 ? '$' + (n/1000).toFixed(1) + 'k' : '$' + Math.round(n);
+  const clip  = s => s.length > 14 ? s.slice(0,13) + '…' : s;
+  const round2 = n => Math.round(n * 100) / 100;
+  const val   = id => parseFloat(document.getElementById(id).value) || 0;
+  const setVal  = (id, v) => { document.getElementById(id).value = v; };
+  const setText = (id, t) => { document.getElementById(id).textContent = t; };
+  const escapeHtml = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  /* ─── Reset ────────────────────────────────────────────────────────── */
+  const DEFAULTS = {
+    a_name:'Loan Option A', a_vehicle:50000, a_finance:45455,
+    a_rate:7.5, a_term:60, a_balloon_pct:28.13, a_balloon_amt:12782,
+    a_salary:120000, a_tax:39,
+    a_fuel:3000, a_rego:800, a_ins:1500, a_maint:1000, a_tyres:400, a_other:0,
+
+    b_name:'Loan Option B', b_vehicle:50000, b_finance:45455,
+    b_rate:6.9, b_term:60, b_balloon_pct:28.13, b_balloon_amt:12782,
+    b_salary:120000, b_tax:39,
+    b_fuel:3000, b_rego:800, b_ins:1500, b_maint:1000, b_tyres:400, b_other:0,
+  };
+
+  function resetAll() {
+    for (const [id, v] of Object.entries(DEFAULTS)) {
+      const elx = document.getElementById(id);
+      if (elx) elx.value = v;
+    }
+    document.getElementById('a_gst_y').checked = true;
+    document.getElementById('b_gst_y').checked = true;
+    document.getElementById('a_vtype_ice').checked = true;
+    document.getElementById('b_vtype_ice').checked = true;
+    document.getElementById('a_fbt_ecm').checked = true;
+    document.getElementById('b_fbt_ecm').checked = true;
+    document.getElementById('a_freq').value = '12';
+    document.getElementById('b_freq').value = '12';
+    document.getElementById('a_term').value = '60';
+    document.getElementById('b_term').value = '60';
+    setMinResidual('a');
+    setMinResidual('b');
+    calc();
+  }
+
+  /* ─── Init ─────────────────────────────────────────────────────────── */
+  document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
+  calc();
+</script>
+</body>
+</html>
