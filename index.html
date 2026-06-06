@@ -439,7 +439,11 @@
     <h1>Novated Lease <span>Comparison Calculator</span></h1>
     <div class="header-sub">Compare two novated lease options side by side — finance, FBT, EV exemption &amp; tax. All calculations run in-browser; nothing is sent anywhere.</div>
   </div>
-  <div style="display:flex;align-items:center;gap:16px;">
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <label class="diff-toggle">
+      <input type="checkbox" id="desk_toggle" onchange="toggleDesktop()" />
+      Desktop layout
+    </label>
     <label class="diff-toggle">
       <input type="checkbox" id="diff_toggle" checked onchange="toggleDiff()" />
       Highlight differences
@@ -1375,6 +1379,32 @@
     document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
   }
 
+  /* ─── Force Desktop Layout ──────────────────────────────────────────── */
+  // Foldables/phones keep "width=device-width", so even Chrome's "Desktop site"
+  // box can leave the mobile breakpoint active. Forcing a fixed-width viewport
+  // makes the page render at desktop width and the browser scales it to fit.
+  const DESKTOP_VP = 'width=1280';
+  const MOBILE_VP  = 'width=device-width, initial-scale=1.0';
+
+  function applyDesktop(on) {
+    const vp = document.querySelector('meta[name="viewport"]');
+    if (vp) vp.setAttribute('content', on ? DESKTOP_VP : MOBILE_VP);
+    try { localStorage.setItem('nl_desktop', on ? '1' : '0'); } catch (e) {}
+  }
+  function toggleDesktop() {
+    applyDesktop(document.getElementById('desk_toggle').checked);
+  }
+  function initDesktop() {
+    let pref = null;
+    try { pref = localStorage.getItem('nl_desktop'); } catch (e) {}
+    // Chrome "Desktop site" drops the "Mobile" token from the user agent.
+    const desktopUA = !/Mobile/i.test(navigator.userAgent);
+    // Honour the browser's desktop-site request; otherwise use a saved manual choice.
+    const on = desktopUA ? true : (pref === '1');
+    document.getElementById('desk_toggle').checked = on;
+    applyDesktop(on);
+  }
+
   function populateSummary(p, r) {
     const freqLower = r.freqWord.toLowerCase();
     setText(`${p}_s_freqword`, r.freqWord);
@@ -1545,6 +1575,7 @@
   }
 
   /* ─── Init ─────────────────────────────────────────────────────────── */
+  initDesktop();
   document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
   calc();
 </script>
