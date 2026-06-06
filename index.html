@@ -219,6 +219,21 @@
     .loan-a .loan-badge { background: var(--accent-a); color: #fff; }
     .loan-b .loan-badge { background: var(--accent-b); color: #fff; }
 
+    .copy-btn {
+      margin-left: auto;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.18); }
+
     /* ─── Card ─────────────────────────────────────────────────────────────── */
     .card {
       background: var(--surface);
@@ -569,6 +584,7 @@
           style="background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,0.25);color:inherit;font-size:14px;font-weight:600;width:170px;outline:none;padding:2px 0;"
           oninput="calc()" />
       </div>
+      <button class="copy-btn" onclick="copyOption('a','b')" title="Copy Option A's values onto Option B">Copy A → B</button>
     </div>
 
     <!-- Finance -->
@@ -866,6 +882,7 @@
           style="background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,0.25);color:inherit;font-size:14px;font-weight:600;width:170px;outline:none;padding:2px 0;"
           oninput="calc()" />
       </div>
+      <button class="copy-btn" onclick="copyOption('b','a')" title="Copy Option B's values onto Option A">Copy B → A</button>
     </div>
 
     <!-- Finance -->
@@ -1478,6 +1495,34 @@
 
   function toggleDiff() {
     document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
+  }
+
+  /* ─── Copy one option onto the other ────────────────────────────────── */
+  async function copyOption(from, to) {
+    const F = from.toUpperCase(), T = to.toUpperCase();
+    const ok = await showModal('Copy option',
+      `Copy all of Option ${F}'s values onto Option ${T}? This overwrites Option ${T}.`,
+      [{ label: `Copy ${F} → ${T}`, value: true, kind: 'primary' }, { label: 'Cancel', value: false }]);
+    if (!ok) return;
+
+    // title + every numeric/select field
+    ['name', ...DIFF_NUM].forEach(key => {
+      const src = document.getElementById(`${from}_${key}`);
+      const dst = document.getElementById(`${to}_${key}`);
+      if (src && dst) dst.value = src.value;
+    });
+    // radio groups (GST treatment, vehicle type, FBT method)
+    DIFF_RADIO.forEach(key => {
+      const sel = document.querySelector(`input[name="${from}_${key}"]:checked`);
+      if (!sel) return;
+      const tgt = document.querySelector(`input[name="${to}_${key}"][value="${sel.value}"]`);
+      if (tgt) tgt.checked = true;
+    });
+    // keep the target's residual floor consistent with the copied term
+    const min = getAtoMin(val(`${to}_term`));
+    const pctEl = document.getElementById(`${to}_balloon_pct`);
+    if (pctEl) pctEl.min = min;
+    calc();
   }
 
   /* ─── Persist State (this browser) ──────────────────────────────────── */
