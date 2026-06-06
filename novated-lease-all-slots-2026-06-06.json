@@ -1,0 +1,156 @@
+{
+  "app": "Novated Lease Comparison Calculator",
+  "exportedAt": "2026-06-06T11:31:33.909Z",
+  "version": 1,
+  "kind": "slots",
+  "active": 1,
+  "slots": [
+    {
+      "name": "BYD Seal vs Zeekr 7x",
+      "state": {
+        "inputs": {
+          "a_name": "Loan Option A",
+          "a_vehicle": "58723.52",
+          "a_finance": "53385.02",
+          "a_rate": "7.5",
+          "a_balloon_pct": "28.13",
+          "a_balloon_amt": "15017.21",
+          "a_salary": "120000",
+          "a_tax": "39",
+          "a_fuel": "3000",
+          "a_rego": "800",
+          "a_ins": "1500",
+          "a_maint": "1000",
+          "a_tyres": "400",
+          "a_other": "0",
+          "b_name": "Loan Option B",
+          "b_vehicle": "71918",
+          "b_finance": "65380",
+          "b_rate": "6.9",
+          "b_balloon_pct": "28.13",
+          "b_balloon_amt": "18391.39",
+          "b_salary": "120000",
+          "b_tax": "39",
+          "b_fuel": "3000",
+          "b_rego": "800",
+          "b_ins": "1500",
+          "b_maint": "1000",
+          "b_tyres": "400",
+          "b_other": "0"
+        },
+        "selects": {
+          "a_term": "60",
+          "a_freq": "26",
+          "b_term": "60",
+          "b_freq": "26"
+        },
+        "radios": {
+          "a_gst": "yes",
+          "a_vtype": "ev",
+          "a_fbt": "ecm",
+          "b_gst": "yes",
+          "b_vtype": "ev",
+          "b_fbt": "ecm"
+        }
+      }
+    },
+    {
+      "name": "BYD Seal vs Sealion7",
+      "state": {
+        "inputs": {
+          "a_name": "Loan Option A",
+          "a_vehicle": "58723.52",
+          "a_finance": "53385.02",
+          "a_rate": "9",
+          "a_balloon_pct": "28.13",
+          "a_balloon_amt": "15017.21",
+          "a_salary": "120000",
+          "a_tax": "39",
+          "a_fuel": "3000",
+          "a_rego": "800",
+          "a_ins": "1500",
+          "a_maint": "1000",
+          "a_tyres": "400",
+          "a_other": "0",
+          "b_name": "Loan Option B",
+          "b_vehicle": "60847.52",
+          "b_finance": "55315.93",
+          "b_rate": "9",
+          "b_balloon_pct": "28.13",
+          "b_balloon_amt": "15560.37",
+          "b_salary": "120000",
+          "b_tax": "39",
+          "b_fuel": "3000",
+          "b_rego": "800",
+          "b_ins": "1500",
+          "b_maint": "1000",
+          "b_tyres": "400",
+          "b_other": "0"
+        },
+        "selects": {
+          "a_term": "60",
+          "a_freq": "26",
+          "b_term": "60",
+          "b_freq": "26"
+        },
+        "radios": {
+          "a_gst": "yes",
+          "a_vtype": "ev",
+          "a_fbt": "ecm",
+          "b_gst": "yes",
+          "b_vtype": "ev",
+          "b_fbt": "ecm"
+        }
+      }
+    },
+    {
+      "name": "Save Slot C",
+      "state": {
+        "inputs": {
+          "a_name": "Loan Option A",
+          "a_vehicle": "50000",
+          "a_finance": "45455",
+          "a_rate": "7.5",
+          "a_balloon_pct": "28.13",
+          "a_balloon_amt": "12786.49",
+          "a_salary": "120000",
+          "a_tax": "39",
+          "a_fuel": "3000",
+          "a_rego": "800",
+          "a_ins": "1500",
+          "a_maint": "1000",
+          "a_tyres": "400",
+          "a_other": "0",
+          "b_name": "Loan Option B",
+          "b_vehicle": "50000",
+          "b_finance": "45455",
+          "b_rate": "6.9",
+          "b_balloon_pct": "28.13",
+          "b_balloon_amt": "12786.49",
+          "b_salary": "120000",
+          "b_tax": "39",
+          "b_fuel": "3000",
+          "b_rego": "800",
+          "b_ins": "1500",
+          "b_maint": "1000",
+          "b_tyres": "400",
+          "b_other": "0"
+        },
+        "selects": {
+          "a_term": "60",
+          "a_freq": "12",
+          "b_term": "60",
+          "b_freq": "12"
+        },
+        "radios": {
+          "a_gst": "yes",
+          "a_vtype": "ice",
+          "a_fbt": "ecm",
+          "b_gst": "yes",
+          "b_vtype": "ice",
+          "b_fbt": "ecm"
+        }
+      }
+    }
+  ]
+}
