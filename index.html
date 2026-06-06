@@ -543,7 +543,7 @@
       <input type="checkbox" id="diff_toggle" checked onchange="toggleDiff()" />
       Highlight differences
     </label>
-    <button class="btn-reset" onclick="resetAll()">↺ Reset All</button>
+    <button class="btn-reset" onclick="resetEverything()">↺ Reset All</button>
   </div>
 </header>
 
@@ -568,7 +568,7 @@
     <button class="btn-reset" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn-reset" onclick="importJSONClick()">⬆ Import JSON</button>
     <input type="file" id="import_file" accept="application/json,.json" style="display:none" onchange="handleImportFile(event)" />
-    <button class="btn-reset primary" onclick="resetAll()">↺ Reset Slot</button>
+    <button class="btn-reset primary" onclick="resetSlot()">↺ Reset Slot</button>
   </div>
 </div>
 
@@ -1980,9 +1980,30 @@
   };
 
   // Reset the CURRENT slot's fields back to defaults (other slots are untouched).
-  function resetAll() {
+  // Reset EVERYTHING: wipe all three slots, their data and names, back to defaults.
+  async function resetEverything() {
+    const ok = await showModal('Reset everything?',
+      'Are you sure? This will remove all existing slots and information you have entered.',
+      [{ label: 'Reset everything', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
+    if (!ok) return;
+    try { localStorage.removeItem(SLOT_KEY); localStorage.removeItem('nl_state'); } catch (e) {}
+    slots = defaultSlots();          // fresh slots with default names, active = Slot A
     applyDefaults();
-    calc();   // live-saves the defaults into the active slot
+    renderSlots();
+    calc();                          // live-saves the defaults into Slot A
+  }
+
+  // Reset only the CURRENT slot: fields back to defaults AND its name to "Save Slot [letter]".
+  async function resetSlot() {
+    const ok = await showModal('Reset this slot?',
+      "Are you sure? This will reset this slot's entries and its name back to default.",
+      [{ label: 'Reset slot', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
+    if (!ok) return;
+    const letter = ['A', 'B', 'C'][slots.active] || 'A';
+    slots.slots[slots.active].name = 'Save Slot ' + letter;
+    applyDefaults();
+    renderSlots();
+    calc();                          // live-saves the defaults into the current slot
   }
 
   /* ─── Init ─────────────────────────────────────────────────────────── */
