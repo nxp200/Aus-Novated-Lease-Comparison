@@ -929,7 +929,7 @@
           <div class="field">
             <label for="b_rate">Interest Rate</label>
             <div class="input-suffix">
-              <input type="number" id="b_rate" value="6.9" min="0.01" max="30" step="0.1" oninput="calc()" />
+              <input type="number" id="b_rate" value="7.5" min="0.01" max="30" step="0.1" oninput="calc()" />
               <span>% p.a.</span>
             </div>
           </div>
@@ -1608,24 +1608,34 @@
     if (!choice) return;
 
     const stamp = new Date().toISOString().slice(0, 10);
+    let payload, defaultName;
     if (choice === 'all') {
       slots.slots[slots.active].state = buildState();   // capture on-screen edits
-      downloadJSON({
+      payload = {
         app: 'Australian Novated Lease Comparison Calculator',
         exportedAt: new Date().toISOString(),
         version: 1, kind: 'slots',
         active: slots.active,
         slots: slots.slots
-      }, `novated-lease-all-slots-${stamp}.json`);
+      };
+      defaultName = `novated-lease-all-slots-${stamp}.json`;
     } else {
-      downloadJSON({
+      payload = {
         app: 'Australian Novated Lease Comparison Calculator',
         exportedAt: new Date().toISOString(),
         version: 1, kind: 'single',
         name: slots.slots[slots.active].name,
         data: buildState()
-      }, `novated-lease-${stamp}.json`);
+      };
+      defaultName = `novated-lease-${stamp}.json`;
     }
+
+    // Let the user name the file (defaults to the standard name).
+    let fname = prompt('Save as file name:', defaultName);
+    if (fname === null) return;                       // cancelled
+    fname = fname.trim() || defaultName;
+    if (!/\.json$/i.test(fname)) fname += '.json';
+    downloadJSON(payload, fname);
   }
 
   /* ─── Import (detects single vs 3-slot file) ────────────────────────── */
@@ -1964,7 +1974,7 @@
     a_fuel:3000, a_rego:800, a_ins:1500, a_maint:1000, a_tyres:400, a_other:0,
 
     b_name:'', b_vehicle:50000, b_finance:45455,
-    b_rate:6.9, b_term:60, b_balloon_pct:28.13, b_balloon_amt:12782,
+    b_rate:7.5, b_term:60, b_balloon_pct:28.13, b_balloon_amt:12782,
     b_salary:120000, b_tax:39,
     b_fuel:3000, b_rego:800, b_ins:1500, b_maint:1000, b_tyres:400, b_other:0,
   };
