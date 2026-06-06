@@ -562,9 +562,11 @@
 
     <div class="loan-header">
       <div class="loan-badge">A</div>
-      <div>
-        <input type="text" id="a_name" value="Loan Option A"
-          style="background:transparent;border:none;color:inherit;font-size:15px;font-weight:700;width:180px;outline:none;"
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <span>Option A</span>
+        <span style="opacity:.45;font-weight:400">—</span>
+        <input type="text" id="a_name" value="" placeholder="add a title, e.g. BYD Seal"
+          style="background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,0.25);color:inherit;font-size:14px;font-weight:600;width:170px;outline:none;padding:2px 0;"
           oninput="calc()" />
       </div>
     </div>
@@ -857,9 +859,11 @@
 
     <div class="loan-header">
       <div class="loan-badge">B</div>
-      <div>
-        <input type="text" id="b_name" value="Loan Option B"
-          style="background:transparent;border:none;color:inherit;font-size:15px;font-weight:700;width:180px;outline:none;"
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <span>Option B</span>
+        <span style="opacity:.45;font-weight:400">—</span>
+        <input type="text" id="b_name" value="" placeholder="add a title, e.g. Tesla Model 3"
+          style="background:transparent;border:none;border-bottom:1px dashed rgba(255,255,255,0.25);color:inherit;font-size:14px;font-weight:600;width:170px;outline:none;padding:2px 0;"
           oninput="calc()" />
       </div>
     </div>
@@ -1395,9 +1399,15 @@
     };
   }
 
+  // Combine the fixed "Option A/B" label with the user's optional title.
+  function optName(p, letter) {
+    const t = (document.getElementById(`${p}_name`).value || '').trim();
+    return t ? `Option ${letter} - ${t}` : `Option ${letter}`;
+  }
+
   function calc() {
-    const aName = document.getElementById('a_name').value || 'Loan Option A';
-    const bName = document.getElementById('b_name').value || 'Loan Option B';
+    const aName = optName('a', 'A');
+    const bName = optName('b', 'B');
     setText('a_summary_name', aName);
     setText('b_summary_name', bName);
 
@@ -1625,8 +1635,17 @@
         renderSlots();
         calc();
       } else {
-        const idx = (typeof obj.active === 'number' && obj.active >= 0 && obj.active < 3) ? obj.active : 0;
-        const src = obj.slots[idx] || obj.slots[0];
+        // Ask which of the file's three slots to load, showing their names.
+        const pick = await showModal('Which slot to import?',
+          'Choose which slot from the file to load into your current slot.',
+          [
+            { label: (obj.slots[0] && obj.slots[0].name) || 'Slot 1', value: 0 },
+            { label: (obj.slots[1] && obj.slots[1].name) || 'Slot 2', value: 1 },
+            { label: (obj.slots[2] && obj.slots[2].name) || 'Slot 3', value: 2 },
+            { label: 'Cancel', value: null }
+          ]);
+        if (pick === null) return;
+        const src = obj.slots[pick];
         const ok = await showModal('Are you sure?',
           `This will override the current slot with "${(src && src.name) || 'imported slot'}".`,
           [{ label: 'Override current slot', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
@@ -1893,12 +1912,12 @@
 
   /* ─── Reset ────────────────────────────────────────────────────────── */
   const DEFAULTS = {
-    a_name:'Loan Option A', a_vehicle:50000, a_finance:45455,
+    a_name:'', a_vehicle:50000, a_finance:45455,
     a_rate:7.5, a_term:60, a_balloon_pct:28.13, a_balloon_amt:12782,
     a_salary:120000, a_tax:39,
     a_fuel:3000, a_rego:800, a_ins:1500, a_maint:1000, a_tyres:400, a_other:0,
 
-    b_name:'Loan Option B', b_vehicle:50000, b_finance:45455,
+    b_name:'', b_vehicle:50000, b_finance:45455,
     b_rate:6.9, b_term:60, b_balloon_pct:28.13, b_balloon_amt:12782,
     b_salary:120000, b_tax:39,
     b_fuel:3000, b_rego:800, b_ins:1500, b_maint:1000, b_tyres:400, b_other:0,
