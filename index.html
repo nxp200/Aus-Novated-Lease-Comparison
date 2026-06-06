@@ -114,6 +114,65 @@
     }
     .btn-reset.primary:hover { background: #3d7ce0; }
 
+    /* ─── Save Slots ────────────────────────────────────────────────────────── */
+    .slots { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .slot-tab {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .slot-tab:hover { background: #2e3350; color: var(--text); }
+    .slot-tab.active { background: var(--accent-a); border-color: var(--accent-a); color: #fff; }
+    .slot-rename {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 7px 11px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .slot-rename:hover { background: var(--surface2); color: var(--text); }
+
+    /* ─── Modal Dialog ──────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.62);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-width: 440px; width: 100%;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .modal-head { padding: 16px 20px; font-size: 15px; font-weight: 700; border-bottom: 1px solid var(--border); }
+    .modal-body { padding: 16px 20px; font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .modal-actions { padding: 14px 20px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; border-top: 1px solid var(--border); }
+    .modal-btn {
+      padding: 8px 16px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500;
+    }
+    .modal-btn:hover { background: #2e3350; }
+    .modal-btn.primary { background: var(--accent-a); border-color: var(--accent-a); color: #fff; }
+    .modal-btn.primary:hover { background: #3d7ce0; }
+    .modal-btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .modal-btn.danger:hover { background: #d63a3a; }
+
     /* ─── Main Layout ──────────────────────────────────────────────────────── */
     main {
       display: grid;
@@ -487,8 +546,14 @@
 </div>
 
 <div class="toolbar">
-  <span class="toolbar-note">💾 Your entries are saved automatically in this browser.</span>
-  <button class="btn-reset primary" onclick="resetAll()">↺ Reset All Fields</button>
+  <div class="slots" id="slots"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <span class="toolbar-note">💾 Auto-saved</span>
+    <button class="btn-reset" onclick="exportJSON()">⬇ Export JSON</button>
+    <button class="btn-reset" onclick="importJSONClick()">⬆ Import JSON</button>
+    <input type="file" id="import_file" accept="application/json,.json" style="display:none" onchange="handleImportFile(event)" />
+    <button class="btn-reset primary" onclick="resetAll()">↺ Reset Slot</button>
+  </div>
 </div>
 
 <main>
@@ -1407,7 +1472,7 @@
 
   /* ─── Persist State (this browser) ──────────────────────────────────── */
   // Save every field in the form so the user's entries survive a page reload.
-  function saveState() {
+  function buildState() {
     const state = { inputs: {}, selects: {}, radios: {} };
     document.querySelectorAll('main input[type="number"], main input[type="text"]').forEach(el => {
       if (el.id) state.inputs[el.id] = el.value;
@@ -1418,15 +1483,170 @@
     document.querySelectorAll('main input[type="radio"]:checked').forEach(el => {
       if (el.name) state.radios[el.name] = el.value;
     });
-    try { localStorage.setItem('nl_state', JSON.stringify(state)); } catch (e) {}
+    return state;
   }
 
-  function loadState() {
-    let raw = null;
-    try { raw = localStorage.getItem('nl_state'); } catch (e) {}
-    if (!raw) return;
-    let s;
-    try { s = JSON.parse(raw); } catch (e) { return; }
+  /* ─── Save Slots (A / B / C) ────────────────────────────────────────── */
+  const SLOT_KEY = 'nl_slots';
+  let slots = null;
+
+  function defaultSlots() {
+    return { active: 0, slots: [
+      { name: 'Save Slot A', state: null },
+      { name: 'Save Slot B', state: null },
+      { name: 'Save Slot C', state: null }
+    ]};
+  }
+  function persistSlots() { try { localStorage.setItem(SLOT_KEY, JSON.stringify(slots)); } catch (e) {} }
+
+  // Live-save the current form into whichever slot is active.
+  function saveState() {
+    if (!slots) return;
+    slots.slots[slots.active].state = buildState();
+    persistSlots();
+  }
+
+  /* ─── Modal helper (promise-based, labelled buttons) ────────────────── */
+  function showModal(title, message, buttons) {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      const h = document.createElement('div'); h.className = 'modal-head'; h.textContent = title;
+      const b = document.createElement('div'); b.className = 'modal-body'; b.textContent = message;
+      const act = document.createElement('div'); act.className = 'modal-actions';
+      const close = v => { if (overlay.parentNode) document.body.removeChild(overlay); resolve(v); };
+      buttons.forEach(btn => {
+        const el = document.createElement('button');
+        el.className = 'modal-btn' + (btn.kind ? ' ' + btn.kind : '');
+        el.textContent = btn.label;
+        el.onclick = () => close(btn.value);
+        act.appendChild(el);
+      });
+      modal.appendChild(h); modal.appendChild(b); modal.appendChild(act);
+      overlay.appendChild(modal);
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+      document.body.appendChild(overlay);
+    });
+  }
+
+  function downloadJSON(obj, fname) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  /* ─── Export (current slot or all slots) ────────────────────────────── */
+  async function exportJSON() {
+    const choice = await showModal('Export data',
+      'Export only the current slot, or all three slots in one file?',
+      [
+        { label: 'Current slot', value: 'current' },
+        { label: 'All slots', value: 'all', kind: 'primary' },
+        { label: 'Cancel', value: null }
+      ]);
+    if (!choice) return;
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    if (choice === 'all') {
+      slots.slots[slots.active].state = buildState();   // capture on-screen edits
+      downloadJSON({
+        app: 'Novated Lease Comparison Calculator',
+        exportedAt: new Date().toISOString(),
+        version: 1, kind: 'slots',
+        active: slots.active,
+        slots: slots.slots
+      }, `novated-lease-all-slots-${stamp}.json`);
+    } else {
+      downloadJSON({
+        app: 'Novated Lease Comparison Calculator',
+        exportedAt: new Date().toISOString(),
+        version: 1, kind: 'single',
+        name: slots.slots[slots.active].name,
+        data: buildState()
+      }, `novated-lease-${stamp}.json`);
+    }
+  }
+
+  /* ─── Import (detects single vs 3-slot file) ────────────────────────── */
+  function importJSONClick() { document.getElementById('import_file').click(); }
+
+  function handleImportFile(ev) {
+    const file = ev.target.files && ev.target.files[0];
+    ev.target.value = '';                 // allow re-picking the same file later
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => { processImport(e.target.result); };
+    reader.readAsText(file);
+  }
+
+  async function processImport(text) {
+    let obj;
+    try { obj = JSON.parse(text); } catch (e) {
+      await showModal('Import failed', "That file isn't valid JSON.", [{ label: 'OK', value: null, kind: 'primary' }]);
+      return;
+    }
+
+    const isMulti  = obj && Array.isArray(obj.slots) && obj.slots.length === 3;
+    const isSingle = obj && obj.data && (obj.data.inputs || obj.data.selects || obj.data.radios);
+
+    if (!isMulti && !isSingle) {
+      await showModal('Import failed', "This file doesn't look like a saved novated-lease scenario.", [{ label: 'OK', value: null, kind: 'primary' }]);
+      return;
+    }
+
+    if (isMulti) {
+      const mode = await showModal('Import slots',
+        'This file contains all 3 slots. Load all slots, or just a single slot into the current one?',
+        [
+          { label: 'Load all slots', value: 'all', kind: 'primary' },
+          { label: 'Single slot', value: 'single' },
+          { label: 'Cancel', value: null }
+        ]);
+      if (!mode) return;
+
+      if (mode === 'all') {
+        const ok = await showModal('Are you sure?',
+          'This will override ALL slots with the imported file.',
+          [{ label: 'Override all slots', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
+        if (!ok) return;
+        slots.slots = obj.slots.map(s => ({
+          name: (s && s.name ? String(s.name) : 'Slot').slice(0, 40),
+          state: (s && s.state) ? s.state : null
+        }));
+        if (typeof obj.active === 'number' && obj.active >= 0 && obj.active < 3) slots.active = obj.active;
+        const act = slots.slots[slots.active].state;
+        if (act) applyState(act); else applyDefaults();
+        persistSlots();
+        renderSlots();
+        calc();
+      } else {
+        const idx = (typeof obj.active === 'number' && obj.active >= 0 && obj.active < 3) ? obj.active : 0;
+        const src = obj.slots[idx] || obj.slots[0];
+        const ok = await showModal('Are you sure?',
+          `This will override the current slot with "${(src && src.name) || 'imported slot'}".`,
+          [{ label: 'Override current slot', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
+        if (!ok) return;
+        if (src && src.state) applyState(src.state); else applyDefaults();
+        calc();   // live-saves into the current slot
+      }
+    } else {
+      const ok = await showModal('Are you sure?',
+        'This will override the current slot with the imported scenario.',
+        [{ label: 'Override current slot', value: true, kind: 'danger' }, { label: 'Cancel', value: false }]);
+      if (!ok) return;
+      applyState(obj.data);
+      calc();
+    }
+  }
+
+  // Push a saved state object back into the form.
+  function applyState(s) {
+    if (!s) return;
     for (const id in (s.inputs  || {})) { const el = document.getElementById(id); if (el) el.value = s.inputs[id]; }
     for (const id in (s.selects || {})) { const el = document.getElementById(id); if (el) el.value = s.selects[id]; }
     for (const name in (s.radios || {})) {
@@ -1436,6 +1656,77 @@
     // keep each option's ATO residual floor consistent with the restored term
     ['a','b'].forEach(p => { const min = getAtoMin(val(`${p}_term`));
       const pctEl = document.getElementById(`${p}_balloon_pct`); if (pctEl) pctEl.min = min; });
+  }
+
+  // Restore every field to the built-in defaults (used for a fresh/empty slot).
+  function applyDefaults() {
+    for (const [id, v] of Object.entries(DEFAULTS)) { const el = document.getElementById(id); if (el) el.value = v; }
+    document.getElementById('a_gst_y').checked = true;
+    document.getElementById('b_gst_y').checked = true;
+    document.getElementById('a_vtype_ice').checked = true;
+    document.getElementById('b_vtype_ice').checked = true;
+    document.getElementById('a_fbt_ecm').checked = true;
+    document.getElementById('b_fbt_ecm').checked = true;
+    document.getElementById('a_freq').value = '12';
+    document.getElementById('b_freq').value = '12';
+    document.getElementById('a_term').value = '60';
+    document.getElementById('b_term').value = '60';
+    setMinResidual('a');
+    setMinResidual('b');
+  }
+
+  function loadSlots() {
+    let raw = null; try { raw = localStorage.getItem(SLOT_KEY); } catch (e) {}
+    if (raw) { try { slots = JSON.parse(raw); } catch (e) { slots = null; } }
+    if (!slots || !Array.isArray(slots.slots) || slots.slots.length !== 3) {
+      slots = defaultSlots();
+      // migrate the previous single-state storage into Slot A, if present
+      let legacy = null; try { legacy = localStorage.getItem('nl_state'); } catch (e) {}
+      if (legacy) { try { slots.slots[0].state = JSON.parse(legacy); } catch (e) {} }
+    }
+    if (typeof slots.active !== 'number' || slots.active < 0 || slots.active > 2) slots.active = 0;
+  }
+
+  function renderSlots() {
+    const wrap = document.getElementById('slots');
+    if (!wrap || !slots) return;
+    wrap.innerHTML = '';
+    slots.slots.forEach((sl, i) => {
+      const b = document.createElement('button');
+      b.className = 'slot-tab' + (i === slots.active ? ' active' : '');
+      b.textContent = sl.name;
+      b.title = (i === slots.active) ? 'Current slot — double-click to rename' : 'Switch to ' + sl.name;
+      b.onclick = () => switchSlot(i);
+      b.ondblclick = () => { if (i === slots.active) renameSlot(); };
+      wrap.appendChild(b);
+    });
+    const r = document.createElement('button');
+    r.className = 'slot-rename';
+    r.textContent = '✎ Rename';
+    r.title = 'Rename current slot';
+    r.onclick = renameSlot;
+    wrap.appendChild(r);
+  }
+
+  function switchSlot(i) {
+    if (!slots || i === slots.active) return;
+    slots.slots[slots.active].state = buildState();   // capture current edits first
+    slots.active = i;
+    const s = slots.slots[i].state;
+    if (s) applyState(s); else applyDefaults();        // empty slot starts from defaults
+    persistSlots();
+    renderSlots();
+    calc();                                            // recompute + live-save into new slot
+  }
+
+  function renameSlot() {
+    if (!slots) return;
+    const name = prompt('Rename this slot:', slots.slots[slots.active].name);
+    if (name && name.trim()) {
+      slots.slots[slots.active].name = name.trim().slice(0, 40);
+      persistSlots();
+      renderSlots();
+    }
   }
 
   /* ─── Force Desktop Layout ──────────────────────────────────────────── */
@@ -1613,30 +1904,17 @@
     b_fuel:3000, b_rego:800, b_ins:1500, b_maint:1000, b_tyres:400, b_other:0,
   };
 
+  // Reset the CURRENT slot's fields back to defaults (other slots are untouched).
   function resetAll() {
-    try { localStorage.removeItem('nl_state'); } catch (e) {}
-    for (const [id, v] of Object.entries(DEFAULTS)) {
-      const elx = document.getElementById(id);
-      if (elx) elx.value = v;
-    }
-    document.getElementById('a_gst_y').checked = true;
-    document.getElementById('b_gst_y').checked = true;
-    document.getElementById('a_vtype_ice').checked = true;
-    document.getElementById('b_vtype_ice').checked = true;
-    document.getElementById('a_fbt_ecm').checked = true;
-    document.getElementById('b_fbt_ecm').checked = true;
-    document.getElementById('a_freq').value = '12';
-    document.getElementById('b_freq').value = '12';
-    document.getElementById('a_term').value = '60';
-    document.getElementById('b_term').value = '60';
-    setMinResidual('a');
-    setMinResidual('b');
-    calc();
+    applyDefaults();
+    calc();   // live-saves the defaults into the active slot
   }
 
   /* ─── Init ─────────────────────────────────────────────────────────── */
   initDesktop();
-  loadState();
+  loadSlots();
+  applyState(slots.slots[slots.active].state);   // null-safe; keeps HTML defaults if slot is empty
+  renderSlots();
   document.body.classList.toggle('diff-on', document.getElementById('diff_toggle').checked);
   calc();
 </script>
